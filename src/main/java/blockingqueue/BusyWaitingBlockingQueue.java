@@ -1,50 +1,59 @@
-package Java.BlockingQueue;
+package src.main.java.blockingqueue;
+
+import java.util.concurrent.locks.Lock;
 
 /*
  * This is example of Blocking Queue / Bounded Buffer / Publisher Subscriber
  */
-class BlockingQueue<T> {
+class BlockingQueueWithMutex<T> {
     T[] array;
     int size;
     int capacity;
     int head = 0;
     int tail = 0;
 
+    Lock lock;
+
     @SuppressWarnings("unchecked")
-    public BlockingQueue(int capacity) {
+    public BlockingQueueWithMutex(int capacity) {
         this.capacity = capacity;
         array = (T[]) new Object[capacity];
     }
 
-    public synchronized void enqueue(T item) throws InterruptedException {
+    public void enqueue(T item) throws InterruptedException {
+        lock.lock();
         while (size == capacity) {
-            wait();
+            lock.unlock();
+
+            lock.lock();
         }
         array[tail%capacity] = item;
         tail = (tail + 1) % capacity;
         size++;
 
-        notifyAll();
+        lock.unlock();
     }
 
-    public synchronized T dequeue() throws InterruptedException{
+    public T dequeue() throws InterruptedException{
+        lock.lock();
         if (size == 0) {
-            wait();
+            lock.unlock();
+            lock.lock();
         }
         T val = array[head];
         array[head] = null;
         head = (head + 1) % capacity;
         size--;
 
-        notifyAll();
+        lock.unlock();
         return val;
     }
 }
 
 
-class main {
+class Main2 {
     public static void main(String[] args) throws InterruptedException {
-        final BlockingQueue<Integer> q = new BlockingQueue<Integer>(5);
+        final BlockingQueueWithMutex<Integer> q = new BlockingQueueWithMutex<Integer>(5);
 
         Thread t1 = new Thread(new Runnable() {
 
